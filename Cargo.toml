@@ -1,0 +1,9 @@
+[package]
+name = "adventofcode2021"
+version = "0.1.0"
+authors = ["Henrik Gustafsson <henrik.gustafsson@ticketmaster.co.uk>"]
+edition = "2021"
+
+
+[dependencies]
+
