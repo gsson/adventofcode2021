@@ -16,7 +16,7 @@ mod part1 {
     pub fn solve<I: std::io::Read>(input: Input<I>) -> usize {
         let (r, _) = input
             .lines()
-            .numbers()
+            .parse::<usize>()
             .fold((0, None), fold);
         r
     }
@@ -41,7 +41,7 @@ mod part2 {
     pub fn solve<I: std::io::Read>(input: Input<I>) -> usize {
         let (r, _, _) = input
             .lines()
-            .numbers()
+            .parse::<usize>()
             .fold((0, None, (0, 0)), fold);
         r
     }

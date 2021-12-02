@@ -1,6 +1,9 @@
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
+use std::marker::PhantomData;
 use std::path::Path;
+use std::str::FromStr;
 
 pub struct Input<I> {
     input: BufReader<I>,
@@ -32,13 +35,14 @@ pub struct InputLines<R> {
 }
 
 pub trait TokenParse: Sized {
-    fn numbers(self) -> NumberIter<Self>;
+    fn parse<T>(self) -> ParseIter<Self, T>;
 }
 
 impl <R: BufRead> TokenParse for InputLines<R> {
-    fn numbers(self) -> NumberIter<Self> {
-        NumberIter {
-            lines: self
+    fn parse<T>(self) -> ParseIter<Self, T> {
+        ParseIter {
+            tokens: self,
+            _t: Default::default()
         }
     }
 }
@@ -59,14 +63,15 @@ pub fn open(p: impl Into<std::path::PathBuf>) -> std::io::Result<Lines<std::io::
     Ok(r.lines())
 }
 
-pub struct NumberIter<I> {
-    lines: I
+pub struct ParseIter<I, T> {
+    tokens: I,
+    _t: PhantomData<T>
 }
 
-impl <I: Iterator<Item=String>> Iterator for NumberIter<I> {
-    type Item = usize;
+impl <I: Iterator<Item=String>, E: Debug, T: FromStr<Err=E>> Iterator for ParseIter<I, T> {
+    type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        Some(self.lines.next()?.parse().unwrap())
+        Some(self.tokens.next()?.parse::<T>().unwrap())
     }
 }
