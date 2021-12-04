@@ -38,7 +38,7 @@ mod part1 {
     use adventofcode2021::{Input, TokenParse};
     use crate::Instruction;
 
-    pub fn solve<I: std::io::Read>(input: Input<I>) -> i32 {
+    pub fn solve<R: std::io::BufRead>(input: Input<R>) -> i32 {
         let (h, d) = input
             .lines()
             .parse::<Instruction>()
@@ -65,7 +65,7 @@ mod part2 {
     use adventofcode2021::{Input, TokenParse};
     use crate::Instruction;
 
-    pub fn solve<I: std::io::Read>(input: Input<I>) -> i32 {
+    pub fn solve<R: std::io::BufRead>(input: Input<R>) -> i32 {
         let (_, h, d) = input
             .lines()
             .parse::<Instruction>()

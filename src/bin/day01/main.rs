@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 mod part1 {
     use adventofcode2021::{Input, TokenParse};
 
-    pub fn solve<I: std::io::Read>(input: Input<I>) -> usize {
+    pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
         let (r, _) = input
             .lines()
             .parse::<usize>()
@@ -38,7 +38,7 @@ mod part1 {
 mod part2 {
     use adventofcode2021::{Input, TokenParse};
 
-    pub fn solve<I: std::io::Read>(input: Input<I>) -> usize {
+    pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
         let (r, _, _) = input
             .lines()
             .parse::<usize>()

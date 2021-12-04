@@ -5,25 +5,26 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::str::FromStr;
 
-pub struct Input<I> {
-    input: BufReader<I>,
+pub struct Input<R> {
+    input: R,
 }
 
-impl <S: std::io::Read> Input<S> {
+impl <S: std::io::Read> Input<BufReader<S>> {
     pub fn from_readable(input: S) -> Self {
         Self {
             input: BufReader::new(input)
         }
     }
 }
-impl Input<File> {
+
+impl Input<BufReader<File>> {
     pub fn from_file(input: impl AsRef<Path>) -> Self {
         Self::from_readable(File::open(input.as_ref()).unwrap())
     }
 }
 
-impl <I: std::io::Read> Input<I> {
-    pub fn lines(self) -> InputLines<BufReader<I>> {
+impl <R: std::io::BufRead> Input<R> {
+    pub fn lines(self) -> InputLines<R> {
         InputLines {
             input: self.input.lines()
         }

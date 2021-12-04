@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 mod part1 {
     use adventofcode2021::*;
 
-    pub fn solve<I: std::io::Read>(input: Input<I>) -> u32 {
+    pub fn solve<R: std::io::BufRead>(input: Input<R>) -> u32 {
         let values = input
             .lines()
             .map(|s| u32::from_str_radix(&s, 2).unwrap())
@@ -85,7 +85,7 @@ mod part2 {
         }
     }
 
-    pub fn solve<I: std::io::Read>(input: Input<I>) -> i32 {
+    pub fn solve<R: std::io::BufRead>(input: Input<R>) -> i32 {
         let values = input
             .lines()
             .map(|s| u32::from_str_radix(&s, 2).unwrap())
