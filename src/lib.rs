@@ -1,4 +1,4 @@
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, ErrorKind, Lines};
 use std::marker::PhantomData;
@@ -19,9 +19,7 @@ impl<S: std::io::Read> Input<BufReader<S>> {
 
 impl<R: std::io::BufRead> Input<R> {
     pub fn new(input: R) -> Self {
-        Self {
-            input
-        }
+        Self { input }
     }
     pub fn into_string(mut self) -> String {
         let mut s = String::new();
@@ -59,15 +57,14 @@ impl<R: std::io::BufRead> Input<R> {
     }
 
     pub fn words(self) -> Words<R> {
-        Words {
-            input: self.input
-        }
+        Words { input: self.input }
     }
 
     pub fn parse<T>(self) -> T
-        where
-            T: FromStr,
-            T::Err: Debug {
+    where
+        T: FromStr,
+        T::Err: Debug,
+    {
         self.into_string().parse().unwrap()
     }
 }
@@ -76,7 +73,7 @@ impl<R: std::io::BufRead> Input<R> {
 fn read_until(input: &mut impl std::io::BufRead, delimiter: u8, buf: &mut Vec<u8>) -> bool {
     match input.read_until(delimiter, buf) {
         Ok(n) => n > 0,
-        Err(error) => panic!("Read failed: {:?}", error)
+        Err(error) => panic!("Read failed: {:?}", error),
     }
 }
 
@@ -98,7 +95,6 @@ fn read_delimited(input: &mut impl std::io::BufRead, delimiter: &[u8]) -> Option
     }
 }
 
-
 fn read_word(input: &mut impl std::io::BufRead) -> Option<Vec<u8>> {
     let mut buf = Vec::new();
     loop {
@@ -108,11 +104,9 @@ fn read_word(input: &mut impl std::io::BufRead) -> Option<Vec<u8>> {
                 Err(ref error) if error.kind() == ErrorKind::Interrupted => continue,
                 Err(error) => panic!("Read failed: {:?}", error),
             };
-            if let Some(start_of_word) = available.iter()
-                .position(|b| !b.is_ascii_whitespace()) {
+            if let Some(start_of_word) = available.iter().position(|b| !b.is_ascii_whitespace()) {
                 let from_start = &available[start_of_word..];
-                if let Some(word_length) = from_start.iter()
-                    .position(|b| b.is_ascii_whitespace()) {
+                if let Some(word_length) = from_start.iter().position(|b| b.is_ascii_whitespace()) {
                     buf.extend_from_slice(&from_start[..word_length]);
                     (true, start_of_word + word_length)
                 } else {
@@ -127,11 +121,7 @@ fn read_word(input: &mut impl std::io::BufRead) -> Option<Vec<u8>> {
         if done {
             return Some(buf);
         } else if used == 0 {
-            return if buf.is_empty() {
-                None
-            } else {
-                Some(buf)
-            };
+            return if buf.is_empty() { None } else { Some(buf) };
         }
     }
 }
@@ -158,8 +148,7 @@ impl<R: std::io::BufRead> Iterator for Words<R> {
     type Item = BufInput;
 
     fn next(&mut self) -> Option<Self::Item> {
-        read_word(&mut self.input)
-            .map(|vec| Input::new(Cursor::new(vec)))
+        read_word(&mut self.input).map(|vec| Input::new(Cursor::new(vec)))
     }
 }
 
@@ -196,10 +185,12 @@ pub struct ParseIter<I, T> {
     _t: PhantomData<T>,
 }
 
-impl<I, E, T> Iterator for ParseIter<I, T> where
-    I: Iterator<Item=BufInput>,
+impl<I, E, T> Iterator for ParseIter<I, T>
+where
+    I: Iterator<Item = BufInput>,
     E: Debug,
-    T: FromStr<Err=E> {
+    T: FromStr<Err = E>,
+{
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -210,14 +201,14 @@ impl<I, E, T> Iterator for ParseIter<I, T> where
 pub trait BitOrAggregate<B = Self> {
     fn bitor<I>(iter: I) -> Self
     where
-    I: Iterator<Item = B>;
+        I: Iterator<Item = B>;
 }
 
 pub trait IteratorExt: Iterator {
     fn bitor<T>(self) -> T
-        where
-            T: BitOrAggregate<Self::Item>,
-            Self: Sized,
+    where
+        T: BitOrAggregate<Self::Item>,
+        Self: Sized,
     {
         T::bitor(self)
     }
@@ -233,43 +224,44 @@ pub trait Bits: Sized {
 }
 
 pub struct BitIndexIterator<T> {
-    v: T
+    v: T,
 }
 
 pub struct BitIterator<T> {
-    v: T
+    v: T,
 }
 
 macro_rules! iteratorext_impl {
     ($SelfT: ty) => {
         impl BitOrAggregate for $SelfT {
-            fn bitor<I>(iter: I) -> Self where I: Iterator<Item=Self> {
+            fn bitor<I>(iter: I) -> Self
+            where
+                I: Iterator<Item = Self>,
+            {
                 iter.fold(0, std::ops::BitOr::bitor)
             }
         }
 
-        impl <'a> BitOrAggregate<&'a $SelfT> for $SelfT {
-            fn bitor<I>(iter: I) -> Self where I: Iterator<Item=&'a Self> {
+        impl<'a> BitOrAggregate<&'a $SelfT> for $SelfT {
+            fn bitor<I>(iter: I) -> Self
+            where
+                I: Iterator<Item = &'a Self>,
+            {
                 iter.copied().bitor()
             }
         }
-    }
-
+    };
 }
 
 macro_rules! bititerate_impl {
     ($SelfT:ty) => {
         impl Bits for $SelfT {
             fn bit_indices(self) -> BitIndexIterator<$SelfT> {
-                BitIndexIterator {
-                    v: self
-                }
+                BitIndexIterator { v: self }
             }
 
             fn bits(self) -> BitIterator<$SelfT> {
-                BitIterator {
-                    v: self
-                }
+                BitIterator { v: self }
             }
             fn push_lsb(self, one: bool) -> $SelfT {
                 (self << 1) | (one as $SelfT)
@@ -309,7 +301,7 @@ macro_rules! bititerate_impl {
                 }
             }
         }
-    }
+    };
 }
 
 bititerate_impl!(u32);
