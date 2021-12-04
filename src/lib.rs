@@ -313,4 +313,5 @@ macro_rules! bititerate_impl {
 }
 
 bititerate_impl!(u32);
+bititerate_impl!(u128);
 iteratorext_impl!(u32);
