@@ -44,6 +44,26 @@ impl<R: std::io::BufRead> Input<R> {
         }
     }
 
+    pub fn sections(self) -> Delimited<R, [u8; 2]> {
+        Delimited {
+            delimiter: [b'\n', b'\n'],
+            input: self.input,
+        }
+    }
+
+    pub fn comma_separated(self) -> Delimited<R, [u8; 1]> {
+        Delimited {
+            delimiter: [b','],
+            input: self.input,
+        }
+    }
+
+    pub fn words(self) -> Words<R> {
+        Words {
+            input: self.input
+        }
+    }
+
     pub fn parse<T>(self) -> T
         where
             T: FromStr,
@@ -78,6 +98,44 @@ fn read_delimited(input: &mut impl std::io::BufRead, delimiter: &[u8]) -> Option
     }
 }
 
+
+fn read_word(input: &mut impl std::io::BufRead) -> Option<Vec<u8>> {
+    let mut buf = Vec::new();
+    loop {
+        let (done, used) = {
+            let available = match input.fill_buf() {
+                Ok(n) => n,
+                Err(ref error) if error.kind() == ErrorKind::Interrupted => continue,
+                Err(error) => panic!("Read failed: {:?}", error),
+            };
+            if let Some(start_of_word) = available.iter()
+                .position(|b| !b.is_ascii_whitespace()) {
+                let from_start = &available[start_of_word..];
+                if let Some(word_length) = from_start.iter()
+                    .position(|b| b.is_ascii_whitespace()) {
+                    buf.extend_from_slice(&from_start[..word_length]);
+                    (true, start_of_word + word_length)
+                } else {
+                    buf.extend_from_slice(from_start);
+                    (false, available.len())
+                }
+            } else {
+                (false, available.len())
+            }
+        };
+        input.consume(used);
+        if done {
+            return Some(buf);
+        } else if used == 0 {
+            return if buf.is_empty() {
+                None
+            } else {
+                Some(buf)
+            };
+        }
+    }
+}
+
 pub struct Delimited<R, D> {
     delimiter: D,
     input: R,
@@ -92,11 +150,33 @@ impl<R: std::io::BufRead, D: std::convert::AsRef<[u8]>> Iterator for Delimited<R
     }
 }
 
+pub struct Words<R> {
+    input: R,
+}
+
+impl<R: std::io::BufRead> Iterator for Words<R> {
+    type Item = BufInput;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        read_word(&mut self.input)
+            .map(|vec| Input::new(Cursor::new(vec)))
+    }
+}
+
 pub trait TokenParse: Sized {
     fn parse<T>(self) -> ParseIter<Self, T>;
 }
 
 impl<R: BufRead, D> TokenParse for Delimited<R, D> {
+    fn parse<T>(self) -> ParseIter<Self, T> {
+        ParseIter {
+            tokens: self,
+            _t: Default::default(),
+        }
+    }
+}
+
+impl<R: BufRead> TokenParse for Words<R> {
     fn parse<T>(self) -> ParseIter<Self, T> {
         ParseIter {
             tokens: self,
