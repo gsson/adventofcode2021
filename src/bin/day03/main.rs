@@ -16,7 +16,7 @@ mod part1 {
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> u32 {
         let values = input
             .lines()
-            .map(|s| u32::from_str_radix(&s, 2).unwrap())
+            .map(|s| u32::from_str_radix(&s.into_string(), 2).unwrap())
             .collect::<Vec<_>>();
         let threshold = (values.len() / 2) as u32;
         let highest_one_bit = values.iter().bitor::<u32>().highest_one_bit();
@@ -88,7 +88,7 @@ mod part2 {
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> i32 {
         let values = input
             .lines()
-            .map(|s| u32::from_str_radix(&s, 2).unwrap())
+            .map(|s| u32::from_str_radix(&s.into_string(), 2).unwrap())
             .collect::<Vec<_>>();
 
         let highest_one_bit = values.iter().bitor::<u32>().highest_one_bit();

@@ -1,6 +1,6 @@
-use std::fmt::Debug;
+use std::fmt::{Debug};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Lines};
+use std::io::{BufRead, BufReader, Cursor, ErrorKind, Lines};
 use std::marker::PhantomData;
 use std::path::Path;
 use std::str::FromStr;
@@ -9,11 +9,24 @@ pub struct Input<R> {
     input: R,
 }
 
-impl <S: std::io::Read> Input<BufReader<S>> {
+pub type BufInput = Input<Cursor<Vec<u8>>>;
+
+impl<S: std::io::Read> Input<BufReader<S>> {
     pub fn from_readable(input: S) -> Self {
+        Self::new(BufReader::new(input))
+    }
+}
+
+impl<R: std::io::BufRead> Input<R> {
+    pub fn new(input: R) -> Self {
         Self {
-            input: BufReader::new(input)
+            input
         }
+    }
+    pub fn into_string(mut self) -> String {
+        let mut s = String::new();
+        self.input.read_to_string(&mut s).unwrap();
+        s
     }
 }
 
@@ -23,40 +36,74 @@ impl Input<BufReader<File>> {
     }
 }
 
-impl <R: std::io::BufRead> Input<R> {
-    pub fn lines(self) -> InputLines<R> {
-        InputLines {
-            input: self.input.lines()
+impl<R: std::io::BufRead> Input<R> {
+    pub fn lines(self) -> Delimited<R, [u8; 1]> {
+        Delimited {
+            delimiter: [b'\n'],
+            input: self.input,
+        }
+    }
+
+    pub fn parse<T>(self) -> T
+        where
+            T: FromStr,
+            T::Err: Debug {
+        self.into_string().parse().unwrap()
+    }
+}
+
+#[inline]
+fn read_until(input: &mut impl std::io::BufRead, delimiter: u8, buf: &mut Vec<u8>) -> bool {
+    match input.read_until(delimiter, buf) {
+        Ok(n) => n > 0,
+        Err(error) => panic!("Read failed: {:?}", error)
+    }
+}
+
+fn read_delimited(input: &mut impl std::io::BufRead, delimiter: &[u8]) -> Option<Vec<u8>> {
+    let last = *delimiter.last().unwrap();
+    let mut buf = Vec::new();
+    if !read_until(input, last, &mut buf) {
+        return None;
+    }
+
+    loop {
+        if buf.ends_with(delimiter) {
+            buf.truncate(buf.len() - delimiter.len());
+            return Some(buf);
+        }
+        if !read_until(input, last, &mut buf) {
+            return Some(buf);
         }
     }
 }
 
-pub struct InputLines<R> {
-    input: Lines<R>,
+pub struct Delimited<R, D> {
+    delimiter: D,
+    input: R,
+}
+
+impl<R: std::io::BufRead, D: std::convert::AsRef<[u8]>> Iterator for Delimited<R, D> {
+    type Item = BufInput;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        read_delimited(&mut self.input, self.delimiter.as_ref())
+            .map(|vec| Input::new(Cursor::new(vec)))
+    }
 }
 
 pub trait TokenParse: Sized {
     fn parse<T>(self) -> ParseIter<Self, T>;
 }
 
-impl <R: BufRead> TokenParse for InputLines<R> {
+impl<R: BufRead, D> TokenParse for Delimited<R, D> {
     fn parse<T>(self) -> ParseIter<Self, T> {
         ParseIter {
             tokens: self,
-            _t: Default::default()
+            _t: Default::default(),
         }
     }
 }
-
-impl <R: BufRead> Iterator for InputLines<R> {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.input.next().map(|r| r.unwrap())
-    }
-}
-
-
 
 pub fn open(p: impl Into<std::path::PathBuf>) -> std::io::Result<Lines<std::io::BufReader<File>>> {
     let f = File::open(p.into())?;
@@ -66,14 +113,17 @@ pub fn open(p: impl Into<std::path::PathBuf>) -> std::io::Result<Lines<std::io::
 
 pub struct ParseIter<I, T> {
     tokens: I,
-    _t: PhantomData<T>
+    _t: PhantomData<T>,
 }
 
-impl <I: Iterator<Item=String>, E: Debug, T: FromStr<Err=E>> Iterator for ParseIter<I, T> {
+impl<I, E, T> Iterator for ParseIter<I, T> where
+    I: Iterator<Item=BufInput>,
+    E: Debug,
+    T: FromStr<Err=E> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        Some(self.tokens.next()?.parse::<T>().unwrap())
+        Some(self.tokens.next()?.parse::<T>())
     }
 }
 
