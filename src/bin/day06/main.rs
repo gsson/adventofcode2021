@@ -11,6 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 const MAX_CYCLE: usize = 8;
+const RESTART_CYCLE: usize = 6;
 
 fn parse<R: std::io::BufRead>(input: Input<R>) -> [u64; MAX_CYCLE + 1] {
     let mut cycles = [0u64; MAX_CYCLE + 1];
@@ -21,15 +22,14 @@ fn parse<R: std::io::BufRead>(input: Input<R>) -> [u64; MAX_CYCLE + 1] {
 }
 
 mod part1 {
-    use crate::parse;
+    use crate::{parse, MAX_CYCLE, RESTART_CYCLE};
     use adventofcode2021::*;
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> u64 {
         let mut cycles = parse(input);
         for _ in 0..80 {
-            let zeroes = cycles[0];
             cycles.rotate_left(1);
-            cycles[6] += zeroes;
+            cycles[RESTART_CYCLE] += cycles[MAX_CYCLE];
         }
         cycles.iter().sum::<u64>()
     }
@@ -42,15 +42,14 @@ mod part1 {
 }
 
 mod part2 {
-    use crate::parse;
+    use crate::{parse, MAX_CYCLE, RESTART_CYCLE};
     use adventofcode2021::*;
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> u64 {
         let mut cycles = parse(input);
         for _ in 0..256 {
-            let zeroes = cycles[0];
             cycles.rotate_left(1);
-            cycles[6] += zeroes;
+            cycles[RESTART_CYCLE] += cycles[MAX_CYCLE];
         }
         cycles.iter().sum::<u64>()
     }
