@@ -1,4 +1,3 @@
-
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, ErrorKind};
@@ -50,6 +49,13 @@ impl<R: std::io::BufRead> Input<R> {
         }
     }
 
+    pub fn delimited<D: AsRef<[u8]> + Sized>(self, delimiter: D) -> Delimited<R, D> {
+        Delimited {
+            delimiter: delimiter,
+            input: self.input,
+        }
+    }
+
     pub fn comma_separated(self) -> Delimited<R, [u8; 1]> {
         Delimited {
             delimiter: [b','],
@@ -62,9 +68,9 @@ impl<R: std::io::BufRead> Input<R> {
     }
 
     pub fn parse<T>(self) -> T
-        where
-            T: FromStr,
-            T::Err: Debug,
+    where
+        T: FromStr,
+        T::Err: Debug,
     {
         self.into_string().parse().unwrap()
     }
@@ -181,10 +187,10 @@ pub struct ParseIter<I, T> {
 }
 
 impl<I, E, T> Iterator for ParseIter<I, T>
-    where
-        I: Iterator<Item = BufInput>,
-        E: Debug,
-        T: FromStr<Err = E>,
+where
+    I: Iterator<Item = BufInput>,
+    E: Debug,
+    T: FromStr<Err = E>,
 {
     type Item = T;
 
