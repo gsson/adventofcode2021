@@ -59,39 +59,37 @@ mod part2 {
             .fold(0u8, |s, b| s | 1 << (b - b'a'))
     }
 
-    fn generate_table(combinations: &[String]) -> [u8; 128] {
+    pub fn digit(table: impl Index<usize, Output = u8>, digit: u8) -> i32 {
+        *table.index(digit as usize) as i32
+    }
+
+    fn generate_table(combinations: &[String]) -> Option<[u8; 128]> {
         let mut table = [0xffu8; 128];
         let by_number_of_segments = combinations.iter()
             .map(|s| normalise(s.as_str()))
             .group_by(|n| n.count_ones());
 
-        let one = *by_number_of_segments.get(&2).and_then(|v| v.get(0)).unwrap();
-        let seven = *by_number_of_segments.get(&3).and_then(|v| v.get(0)).unwrap();
-        let four = *by_number_of_segments.get(&4).and_then(|v| v.get(0)).unwrap();
-        let eight = *by_number_of_segments.get(&7).and_then(|v| v.get(0)).unwrap();
+        let one = *by_number_of_segments.get(&2)?.first()?;
+        let seven = *by_number_of_segments.get(&3)?.first()?;
+        let four = *by_number_of_segments.get(&4)?.first()?;
+        let eight = *by_number_of_segments.get(&7)?.first()?;
 
-        let six = *by_number_of_segments.get(&6).unwrap().iter() // Contains 0, 6 and 9
-            .find(|n| **n | one != **n) // Segments of 6 is the only number that is not a superset of the segments of 1
-            .unwrap();
+        let six = *by_number_of_segments.get(&6)?.iter() // Contains 0, 6 and 9
+            .find(|n| **n | one != **n)?; // Segments of 6 is the only number that is not a superset of the segments of 1
 
-        let five = *by_number_of_segments.get(&5).unwrap().iter() // Contains 2, 3 and 5
-            .find(|n| **n | six == six) // Segments of 5 is the only number that is a subset of the segments of 6
-            .unwrap();
+        let five = *by_number_of_segments.get(&5)?.iter() // Contains 2, 3 and 5
+            .find(|n| **n | six == six)?; // Segments of 5 is the only number that is a subset of the segments of 6
 
         let nine = five | one; // 9 is just the union of the segments of 1 and 5
 
-        let zero = *by_number_of_segments.get(&6).unwrap().iter() // Contains 0, 6 and 9
-            .find(|n| **n != six && **n != nine) // 0
-            .unwrap();
+        let zero = *by_number_of_segments.get(&6)?.iter() // Contains 0, 6 and 9
+            .find(|n| **n != six && **n != nine)?; // 0
 
-        let three = *by_number_of_segments.get(&5).unwrap().iter() // Contains 2, 3 and 5
-            .filter(|n| **n != five) // 2 or 3
-            .find(|n| **n | nine == nine) // Segments of 3 is a subset of the segments of 9
-            .unwrap();
+        let three = *by_number_of_segments.get(&5)?.iter() // Contains 2, 3 and 5
+            .find(|n| **n != five && **n | nine == nine)?; // Excluding 5, the segments of 3 is a subset of the segments of 9
 
-        let two = *by_number_of_segments.get(&5).unwrap().iter()// Contains 2, 3 and 5
-            .find(|n| **n != three && **n != five) // 2
-            .unwrap();
+        let two = *by_number_of_segments.get(&5)?.iter() // Contains 2, 3 and 5
+            .find(|n| **n != three && **n != five)?; // 2
 
         table[zero as usize] = 0;
         table[one as usize] = 1;
@@ -104,24 +102,17 @@ mod part2 {
         table[eight as usize] = 8;
         table[nine as usize] = 9;
 
-        table
-    }
-
-    pub fn digit(table: impl Index<usize, Output = u8>, digit: u8) -> u8 {
-        *table.index(digit as usize)
+        Some(table)
     }
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> i32 {
         let n = parse(input)
             .map(|(config, lit)| {
-                let table = generate_table(&config);
+                let table = generate_table(&config).unwrap();
                 lit.iter().map(|s| normalise(s))
-                    .map(|n| digit(table, n).to_string())
-                    .collect::<String>()
-                    .parse::<i32>().unwrap()
+                    .fold(0i32, |s, n| s * 10 + digit(table, n))
             })
             .sum::<i32>();
-        // 61229 too low
         n
     }
 
