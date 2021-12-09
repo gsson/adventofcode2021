@@ -1,8 +1,8 @@
 mod input;
 
+pub use input::*;
 use std::collections::HashMap;
 use std::hash::Hash;
-pub use input::*;
 
 pub trait BitOrAggregate<B = Self> {
     fn bitor<I>(iter: I) -> Self
@@ -12,9 +12,9 @@ pub trait BitOrAggregate<B = Self> {
 
 pub trait GroupBy<K: Hash + Eq + Sized> {
     fn group_by<T, I, F>(iter: I, f: F) -> HashMap<K, Vec<I::Item>>
-        where
-            I: Iterator<Item = T>,
-            F: Fn(T) -> K;
+    where
+        I: Iterator<Item = T>,
+        F: Fn(T) -> K;
 }
 
 pub trait IteratorExt: Iterator {
@@ -25,10 +25,12 @@ pub trait IteratorExt: Iterator {
     {
         T::bitor(self)
     }
-    fn group_by<K, F>(self, f: F) -> HashMap<K, Vec<Self::Item>> where
-    Self: Sized,
-    K: Hash + Eq + Sized,
-    F: Fn(&Self::Item) -> K, {
+    fn group_by<K, F>(self, f: F) -> HashMap<K, Vec<Self::Item>>
+    where
+        Self: Sized,
+        K: Hash + Eq + Sized,
+        F: Fn(&Self::Item) -> K,
+    {
         let mut map = HashMap::<K, Vec<Self::Item>>::new();
         for v in self {
             let key = f(&v);

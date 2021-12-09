@@ -1,8 +1,8 @@
+use adventofcode2021::*;
 use std::cmp::max;
 use std::convert::Infallible;
 use std::ops::{Add, Mul, Sub};
 use std::str::FromStr;
-use adventofcode2021::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = part1::solve(Input::from_file("src/bin/day05/input.txt"));
@@ -25,7 +25,10 @@ impl FromStr for Point {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (x, y) = s.split_once(",").unwrap();
-        Ok(Self { x: x.parse().unwrap(), y: y.parse().unwrap() } )
+        Ok(Self {
+            x: x.parse().unwrap(),
+            y: y.parse().unwrap(),
+        })
     }
 }
 
@@ -35,7 +38,7 @@ impl Sub for Point {
     fn sub(self, rhs: Self) -> Self::Output {
         Point {
             x: self.x - rhs.x,
-            y: self.y - rhs.y
+            y: self.y - rhs.y,
         }
     }
 }
@@ -46,7 +49,7 @@ impl Mul for Point {
     fn mul(self, rhs: Self) -> Self::Output {
         Point {
             x: self.x * rhs.x,
-            y: self.y * rhs.y
+            y: self.y * rhs.y,
         }
     }
 }
@@ -57,7 +60,7 @@ impl Mul<i32> for Point {
     fn mul(self, rhs: i32) -> Self::Output {
         Point {
             x: self.x * rhs,
-            y: self.y * rhs
+            y: self.y * rhs,
         }
     }
 }
@@ -68,7 +71,7 @@ impl Add for Point {
     fn add(self, rhs: Self) -> Self::Output {
         Point {
             x: self.x + rhs.x,
-            y: self.y + rhs.y
+            y: self.y + rhs.y,
         }
     }
 }
@@ -88,12 +91,15 @@ impl Line {
     pub fn points(&self) -> LinePointsIter {
         let Point { x: dx, y: dy } = self.end - self.start;
         let length = max(dx.abs(), dy.abs());
-        let slope = Point { x: dx.signum(), y: dy.signum() };
+        let slope = Point {
+            x: dx.signum(),
+            y: dy.signum(),
+        };
         LinePointsIter {
             start: self.start,
             slope,
             length,
-            i: 0
+            i: 0,
         }
     }
 }
@@ -103,7 +109,10 @@ impl FromStr for Line {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (start, end) = s.split_once(" -> ").unwrap();
-        Ok(Self { start: start.parse().unwrap(), end: end.parse().unwrap()})
+        Ok(Self {
+            start: start.parse().unwrap(),
+            end: end.parse().unwrap(),
+        })
     }
 }
 
@@ -128,26 +137,28 @@ impl Iterator for LinePointsIter {
     }
 }
 
-fn parse<R: std::io::BufRead>(input: Input<R>) -> impl Iterator<Item=Line> {
-    input.lines()
-        .parse()
+fn parse<R: std::io::BufRead>(input: Input<R>) -> impl Iterator<Item = Line> {
+    input.lines().parse()
 }
 
 mod part1 {
-    use std::collections::HashSet;
     use crate::parse;
     use adventofcode2021::*;
+    use std::collections::HashSet;
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
         let (_, overlaps) = parse(input)
             .filter(|l| l.is_orthogonal())
             .flat_map(move |l| l.points())
-            .fold((HashSet::new(), HashSet::new()), |(mut all, mut overlaps), p| {
-                if !all.insert(p) {
-                    overlaps.insert(p);
-                }
-                (all, overlaps)
-            });
+            .fold(
+                (HashSet::new(), HashSet::new()),
+                |(mut all, mut overlaps), p| {
+                    if !all.insert(p) {
+                        overlaps.insert(p);
+                    }
+                    (all, overlaps)
+                },
+            );
         overlaps.len()
     }
 
@@ -159,20 +170,19 @@ mod part1 {
 }
 
 mod part2 {
-    use std::collections::HashSet;
     use crate::parse;
     use adventofcode2021::*;
+    use std::collections::HashMap;
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
-        let (_, overlaps) = parse(input)
-            .flat_map(|l| l.points())
-            .fold((HashSet::new(), HashSet::new()), |(mut all, mut overlaps), p| {
-                if !all.insert(p) {
-                    overlaps.insert(p);
-                }
-                (all, overlaps)
-            });
-        overlaps.len()
+        let points = parse(input).flat_map(|l| l.points()).fold(
+            HashMap::<_, i32>::new(),
+            |mut points, p| {
+                *points.entry(p).or_default() += 1;
+                points
+            },
+        );
+        points.values().filter(|v| **v > 1).count()
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use adventofcode2021::*;
 
-fn main() -> Result<(), Box<dyn std::error::Error>>{
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = part1::solve(Input::from_file("src/bin/day01/input.txt"));
     eprintln!("Part 1: {}", a);
     assert_eq!(1791, a);
@@ -14,10 +14,7 @@ mod part1 {
     use adventofcode2021::{Input, TokenParse};
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
-        let (r, _) = input
-            .lines()
-            .parse::<usize>()
-            .fold((0, None), fold);
+        let (r, _) = input.lines().parse::<usize>().fold((0, None), fold);
         r
     }
 
@@ -39,16 +36,18 @@ mod part2 {
     use adventofcode2021::{Input, TokenParse};
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
-        let (r, _, _) = input
-            .lines()
-            .parse::<usize>()
-            .fold((0, None, (0, 0)), fold);
+        let (r, _, _) = input.lines().parse::<usize>().fold((0, None, (0, 0)), fold);
         r
     }
 
-    fn fold(state: (usize, Option<usize>, (usize, usize)), next: usize) -> (usize, Option<usize>, (usize, usize)) {
+    fn fold(
+        state: (usize, Option<usize>, (usize, usize)),
+        next: usize,
+    ) -> (usize, Option<usize>, (usize, usize)) {
         match state {
-            (n, Some(prev_sum), (prev1, prev2)) if prev_sum < prev1 + prev2 + next => (n + 1, Some(prev1 + prev2 + next), (prev2, next)),
+            (n, Some(prev_sum), (prev1, prev2)) if prev_sum < prev1 + prev2 + next => {
+                (n + 1, Some(prev1 + prev2 + next), (prev2, next))
+            }
             (n, Some(_), (prev1, prev2)) => (n, Some(prev1 + prev2 + next), (prev2, next)),
             (n, None, (0, 0)) => (n, None, (0, next)),
             (n, None, (0, prev2)) => (n, None, (prev2, next)),
