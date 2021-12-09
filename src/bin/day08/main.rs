@@ -15,8 +15,8 @@ fn parse<R: std::io::BufRead>(input: Input<R>) -> impl Iterator<Item = (Vec<Stri
         input.words().map(|w| w.into_string()).collect()
     }
     fn line<R: std::io::BufRead>(input: Input<R>) -> (Vec<String>, Vec<String>) {
-        let mut d = input.delimited(" | ");
-        (words(d.next().unwrap()), words(d.next().unwrap()))
+        let (left, right) = input.delimited_once(" | ");
+        (words(left), words(right))
     }
 
     input.lines().map(line)

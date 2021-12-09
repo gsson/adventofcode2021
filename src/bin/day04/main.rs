@@ -71,15 +71,13 @@ fn parse<R: std::io::BufRead>(input: Input<R>) -> (Vec<u32>, Vec<Board>) {
             .for_each(|(r, line)| board_row(&mut board, r, line));
         board
     }
-    let mut sections = input.sections();
-    let numbers = sections
-        .next()
-        .unwrap()
+    let (numbers, boards) = input.delimited_once("\n\n");
+    let numbers = numbers
         .comma_separated()
         .parse::<u32>()
         .collect::<Vec<_>>();
 
-    let boards = sections.map(board).collect::<Vec<_>>();
+    let boards = boards.sections().map(board).collect::<Vec<_>>();
 
     (numbers, boards)
 }

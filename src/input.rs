@@ -42,6 +42,11 @@ impl<R: std::io::BufRead> Input<R> {
         }
     }
 
+    pub fn delimited_once<D: AsRef<[u8]> + Sized>(mut self, delimiter: D) -> (Input<Cursor<Vec<u8>>>, Self) {
+        let first = read_delimited(&mut self.input, delimiter.as_ref()).unwrap();
+        (Input::new(Cursor::new(first)), self)
+    }
+
     #[inline]
     pub fn lines(self) -> Delimited<R, [u8; 1]> {
         self.delimited([b'\n'])
