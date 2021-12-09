@@ -45,6 +45,7 @@ pub trait Bits: Sized {
     fn bits(self) -> BitIterator<Self>;
     fn push_lsb(self, one: bool) -> Self;
     fn highest_one_bit(self) -> Self;
+    fn twos_complement(self) -> Self;
 }
 
 pub struct BitIndexIterator<T> {
@@ -95,6 +96,9 @@ macro_rules! bititerate_impl {
                 const MAX_BIT: $SelfT = 1 << (<$SelfT>::BITS - 1);
                 self & (MAX_BIT >> self.leading_zeros())
             }
+            fn twos_complement(self) -> $SelfT {
+                (!self) + 1
+            }
         }
 
         impl Iterator for BitIndexIterator<$SelfT> {
@@ -130,5 +134,6 @@ macro_rules! bititerate_impl {
 
 bititerate_impl!(u8);
 bititerate_impl!(u32);
+bititerate_impl!(usize);
 bititerate_impl!(u128);
 iteratorext_impl!(u32);
