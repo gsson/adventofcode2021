@@ -12,17 +12,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn parse<R: std::io::BufRead>(input: Input<R>) -> impl Iterator<Item = (Vec<String>, Vec<String>)> {
     fn words<R: std::io::BufRead>(input: Input<R>) -> Vec<String> {
-        input.words()
-            .map(|w| w.into_string())
-            .collect()
+        input.words().map(|w| w.into_string()).collect()
     }
     fn line<R: std::io::BufRead>(input: Input<R>) -> (Vec<String>, Vec<String>) {
         let mut d = input.delimited(" | ");
         (words(d.next().unwrap()), words(d.next().unwrap()))
     }
 
-    input.lines()
-        .map(|l| line(l))
+    input.lines().map(line)
 }
 
 mod part1 {
@@ -36,10 +33,7 @@ mod part1 {
     }
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
-        let n = parse(input)
-            .map(|(_, lit)| count_known_lit(&lit))
-            .sum();
-        n
+        parse(input).map(|(_, lit)| count_known_lit(&lit)).sum()
     }
 
     #[test]
@@ -55,8 +49,7 @@ mod part2 {
     use std::ops::Index;
 
     fn normalise(s: &str) -> u8 {
-        s.bytes()
-            .fold(0u8, |s, b| s | 1 << (b - b'a'))
+        s.bytes().fold(0u8, |s, b| s | 1 << (b - b'a'))
     }
 
     pub fn digit(table: impl Index<usize, Output = u8>, digit: u8) -> i32 {
@@ -65,7 +58,8 @@ mod part2 {
 
     fn generate_table(combinations: &[String]) -> Option<[u8; 128]> {
         let mut table = [0xffu8; 128];
-        let by_number_of_segments = combinations.iter()
+        let by_number_of_segments = combinations
+            .iter()
             .map(|s| normalise(s.as_str()))
             .group_by(|n| n.count_ones());
 
@@ -74,21 +68,31 @@ mod part2 {
         let four = *by_number_of_segments.get(&4)?.first()?;
         let eight = *by_number_of_segments.get(&7)?.first()?;
 
-        let six = *by_number_of_segments.get(&6)?.iter() // Contains 0, 6 and 9
+        let six = *by_number_of_segments
+            .get(&6)?
+            .iter() // Contains 0, 6 and 9
             .find(|n| **n | one != **n)?; // Segments of 6 is the only number that is not a superset of the segments of 1
 
-        let five = *by_number_of_segments.get(&5)?.iter() // Contains 2, 3 and 5
+        let five = *by_number_of_segments
+            .get(&5)?
+            .iter() // Contains 2, 3 and 5
             .find(|n| **n | six == six)?; // Segments of 5 is the only number that is a subset of the segments of 6
 
         let nine = five | one; // 9 is just the union of the segments of 1 and 5
 
-        let zero = *by_number_of_segments.get(&6)?.iter() // Contains 0, 6 and 9
+        let zero = *by_number_of_segments
+            .get(&6)?
+            .iter() // Contains 0, 6 and 9
             .find(|n| **n != six && **n != nine)?; // 0
 
-        let three = *by_number_of_segments.get(&5)?.iter() // Contains 2, 3 and 5
+        let three = *by_number_of_segments
+            .get(&5)?
+            .iter() // Contains 2, 3 and 5
             .find(|n| **n != five && **n | nine == nine)?; // Excluding 5, the segments of 3 is a subset of the segments of 9
 
-        let two = *by_number_of_segments.get(&5)?.iter() // Contains 2, 3 and 5
+        let two = *by_number_of_segments
+            .get(&5)?
+            .iter() // Contains 2, 3 and 5
             .find(|n| **n != three && **n != five)?; // 2
 
         table[zero as usize] = 0;
@@ -106,14 +110,14 @@ mod part2 {
     }
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> i32 {
-        let n = parse(input)
+        parse(input)
             .map(|(config, lit)| {
                 let table = generate_table(&config).unwrap();
-                lit.iter().map(|s| normalise(s))
+                lit.iter()
+                    .map(|s| normalise(s))
                     .fold(0i32, |s, n| s * 10 + digit(table, n))
             })
-            .sum::<i32>();
-        n
+            .sum::<i32>()
     }
 
     #[test]
