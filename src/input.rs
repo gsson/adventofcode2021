@@ -35,32 +35,26 @@ impl Input<BufReader<File>> {
 }
 
 impl<R: std::io::BufRead> Input<R> {
-    pub fn lines(self) -> Delimited<R, [u8; 1]> {
-        Delimited {
-            delimiter: [b'\n'],
-            input: self.input,
-        }
-    }
-
-    pub fn sections(self) -> Delimited<R, [u8; 2]> {
-        Delimited {
-            delimiter: [b'\n', b'\n'],
-            input: self.input,
-        }
-    }
-
     pub fn delimited<D: AsRef<[u8]> + Sized>(self, delimiter: D) -> Delimited<R, D> {
         Delimited {
-            delimiter: delimiter,
+            delimiter,
             input: self.input,
         }
     }
 
+    #[inline]
+    pub fn lines(self) -> Delimited<R, [u8; 1]> {
+        self.delimited([b'\n'])
+    }
+
+    #[inline]
+    pub fn sections(self) -> Delimited<R, [u8; 2]> {
+        self.delimited([b'\n', b'\n'])
+    }
+
+    #[inline]
     pub fn comma_separated(self) -> Delimited<R, [u8; 1]> {
-        Delimited {
-            delimiter: [b','],
-            input: self.input,
-        }
+        self.delimited([b','])
     }
 
     pub fn words(self) -> Words<R> {
