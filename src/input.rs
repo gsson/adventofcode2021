@@ -11,6 +11,21 @@ pub struct Input<R> {
 
 pub type BufInput = Input<Cursor<Vec<u8>>>;
 
+pub trait FromInput: Sized {
+    fn from_input<R: BufRead>(input: Input<R>) -> Self;
+}
+
+impl <T> FromInput for T
+    where
+        T: FromStr,
+        T::Err: Debug {
+    #[inline]
+    fn from_input<R: BufRead>(input: Input<R>) -> Self
+    {
+        Self::from_str(&input.into_string()).unwrap()
+    }
+}
+
 impl<S: std::io::Read> Input<BufReader<S>> {
     pub fn from_readable(input: S) -> Self {
         Self::new(BufReader::new(input))
@@ -68,10 +83,9 @@ impl<R: std::io::BufRead> Input<R> {
 
     pub fn parse<T>(self) -> T
     where
-        T: FromStr,
-        T::Err: Debug,
+        T: FromInput
     {
-        self.into_string().parse().unwrap()
+        T::from_input(self)
     }
 }
 
@@ -185,11 +199,10 @@ pub struct ParseIter<I, T> {
     _t: PhantomData<T>,
 }
 
-impl<I, E, T> Iterator for ParseIter<I, T>
+impl<I, T> Iterator for ParseIter<I, T>
 where
     I: Iterator<Item = BufInput>,
-    E: Debug,
-    T: FromStr<Err = E>,
+    T: FromInput,
 {
     type Item = T;
 

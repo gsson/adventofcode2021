@@ -1,6 +1,5 @@
 use adventofcode2021::*;
-use std::convert::Infallible;
-use std::str::FromStr;
+use std::io::BufRead;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = part1::solve(Input::from_file("src/bin/day02/input.txt"));
@@ -18,19 +17,16 @@ enum Instruction {
     Down(i32),
 }
 
-impl FromStr for Instruction {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (instruction, magnitude) = s.split_once(' ').unwrap();
-        let magnitude = magnitude.parse::<i32>().unwrap();
-        let instruction = match instruction {
+impl FromInput for Instruction {
+    fn from_input<R: BufRead>(input: Input<R>) -> Self {
+        let (instruction, magnitude) = input.delimited_once(" ");
+        let magnitude = magnitude.parse::<i32>();
+        match instruction.into_string().as_str() {
             "forward" => Self::Forward(magnitude),
             "up" => Self::Up(magnitude),
             "down" => Self::Down(magnitude),
             _ => unreachable!(),
-        };
-        Ok(instruction)
+        }
     }
 }
 

@@ -1,8 +1,7 @@
 use adventofcode2021::*;
 use std::cmp::max;
-use std::convert::Infallible;
+use std::io::BufRead;
 use std::ops::{Add, Mul, Sub};
-use std::str::FromStr;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = part1::solve(Input::from_file("src/bin/day05/input.txt"));
@@ -20,15 +19,13 @@ struct Point {
     y: i32,
 }
 
-impl FromStr for Point {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (x, y) = s.split_once(",").unwrap();
-        Ok(Self {
-            x: x.parse().unwrap(),
-            y: y.parse().unwrap(),
-        })
+impl FromInput for Point {
+    fn from_input<R: BufRead>(input: Input<R>) -> Self {
+        let (x, y) = input.delimited_once(",");
+        Self {
+            x: x.parse(),
+            y: y.parse()
+        }
     }
 }
 
@@ -104,15 +101,13 @@ impl Line {
     }
 }
 
-impl FromStr for Line {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (start, end) = s.split_once(" -> ").unwrap();
-        Ok(Self {
-            start: start.parse().unwrap(),
-            end: end.parse().unwrap(),
-        })
+impl FromInput for Line {
+    fn from_input<R: BufRead>(input: Input<R>) -> Self {
+        let (start, end) = input.delimited_once(" -> ");
+        Self {
+            start: start.parse(),
+            end: end.parse(),
+        }
     }
 }
 
