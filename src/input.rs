@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor, ErrorKind};
+use std::io::{BufRead, BufReader, Cursor, ErrorKind, Read};
 use std::marker::PhantomData;
 use std::path::Path;
 use std::str::FromStr;
@@ -15,13 +15,13 @@ pub trait FromInput: Sized {
     fn from_input<R: BufRead>(input: Input<R>) -> Self;
 }
 
-impl <T> FromInput for T
-    where
-        T: FromStr,
-        T::Err: Debug {
+impl<T> FromInput for T
+where
+    T: FromStr,
+    T::Err: Debug,
+{
     #[inline]
-    fn from_input<R: BufRead>(input: Input<R>) -> Self
-    {
+    fn from_input<R: BufRead>(input: Input<R>) -> Self {
         Self::from_str(&input.into_string()).unwrap()
     }
 }
@@ -29,6 +29,12 @@ impl <T> FromInput for T
 impl<S: std::io::Read> Input<BufReader<S>> {
     pub fn from_readable(input: S) -> Self {
         Self::new(BufReader::new(input))
+    }
+}
+
+impl<B: AsRef<[u8]>> Input<Cursor<B>> {
+    pub fn from_buf(buf: B) -> Self {
+        Self::new(Cursor::new(buf))
     }
 }
 
@@ -41,12 +47,48 @@ impl<R: std::io::BufRead> Input<R> {
         self.input.read_to_string(&mut s).unwrap();
         s
     }
+
+    pub fn into_bytes(mut self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        self.input.read_to_end(&mut bytes).unwrap();
+        bytes
+    }
+
+    pub fn bytes(self) -> Bytes<R> {
+        Bytes { input: self.input }
+    }
+}
+
+pub struct Bytes<R> {
+    input: R,
+}
+
+impl<R> Iterator for Bytes<R>
+where
+    R: Read,
+{
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut byte = 0u8;
+        match self.input.read(std::array::from_mut(&mut byte)) {
+            Ok(1) => Some(byte),
+            Ok(0) => None,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Input<BufReader<File>> {
     pub fn from_file(input: impl AsRef<Path>) -> Self {
         Self::from_readable(File::open(input.as_ref()).unwrap())
     }
+}
+
+pub mod delimiters {
+    pub const SECTION: [u8; 2] = [b'\n', b'\n'];
+    pub const LINE: [u8; 1] = [b'\n'];
+    pub const COMMA: [u8; 1] = [b','];
 }
 
 impl<R: std::io::BufRead> Input<R> {
@@ -57,24 +99,27 @@ impl<R: std::io::BufRead> Input<R> {
         }
     }
 
-    pub fn delimited_once<D: AsRef<[u8]> + Sized>(mut self, delimiter: D) -> (Input<Cursor<Vec<u8>>>, Self) {
+    pub fn delimited_once<D: AsRef<[u8]> + Sized>(
+        mut self,
+        delimiter: D,
+    ) -> (Input<Cursor<Vec<u8>>>, Self) {
         let first = read_delimited(&mut self.input, delimiter.as_ref()).unwrap();
-        (Input::new(Cursor::new(first)), self)
+        (Input::from_buf(first), self)
     }
 
     #[inline]
     pub fn lines(self) -> Delimited<R, [u8; 1]> {
-        self.delimited([b'\n'])
+        self.delimited(delimiters::LINE)
     }
 
     #[inline]
     pub fn sections(self) -> Delimited<R, [u8; 2]> {
-        self.delimited([b'\n', b'\n'])
+        self.delimited(delimiters::SECTION)
     }
 
     #[inline]
     pub fn comma_separated(self) -> Delimited<R, [u8; 1]> {
-        self.delimited([b','])
+        self.delimited(delimiters::COMMA)
     }
 
     pub fn words(self) -> Words<R> {
@@ -83,7 +128,7 @@ impl<R: std::io::BufRead> Input<R> {
 
     pub fn parse<T>(self) -> T
     where
-        T: FromInput
+        T: FromInput,
     {
         T::from_input(self)
     }
@@ -155,8 +200,7 @@ impl<R: std::io::BufRead, D: std::convert::AsRef<[u8]>> Iterator for Delimited<R
     type Item = BufInput;
 
     fn next(&mut self) -> Option<Self::Item> {
-        read_delimited(&mut self.input, self.delimiter.as_ref())
-            .map(|vec| Input::new(Cursor::new(vec)))
+        read_delimited(&mut self.input, self.delimiter.as_ref()).map(Input::from_buf)
     }
 }
 
@@ -168,7 +212,7 @@ impl<R: std::io::BufRead> Iterator for Words<R> {
     type Item = BufInput;
 
     fn next(&mut self) -> Option<Self::Item> {
-        read_word(&mut self.input).map(|vec| Input::new(Cursor::new(vec)))
+        read_word(&mut self.input).map(Input::from_buf)
     }
 }
 
