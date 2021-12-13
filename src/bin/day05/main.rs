@@ -24,7 +24,7 @@ impl FromInput for Point {
         let (x, y) = input.delimited_once(",");
         Self {
             x: x.parse(),
-            y: y.parse()
+            y: y.parse(),
         }
     }
 }

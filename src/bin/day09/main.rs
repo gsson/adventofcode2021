@@ -13,19 +13,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn parse<R: std::io::BufRead>(input: Input<R>) -> (usize, usize, Vec<u8>) {
     let mut map = Vec::new();
-    let mut lines = input.lines();
+    let (first, remaining) = input.delimited_once(delimiters::LINE);
+    let lines = remaining.lines();
 
-    let first = lines.next().unwrap().into_string();
-    let row_width = first.bytes().count() + 2;
+    let first = first.bytes().collect::<Vec<_>>();
+    let row_width = first.len() + 2;
     map.extend(std::iter::repeat(9).take(row_width));
 
     map.push(9);
-    map.extend(first.bytes().map(|b| b - b'0'));
+    map.extend(first.iter().map(|b| b - b'0'));
     map.push(9);
 
     for line in lines {
         map.push(9);
-        map.extend(line.into_string().bytes().map(|b| b - b'0'));
+        map.extend(line.bytes().map(|b| b - b'0'));
         map.push(9);
     }
     map.extend(std::iter::repeat(9).take(row_width));
@@ -84,6 +85,21 @@ mod part2 {
 
     pub fn solve<R: std::io::BufRead>(input: Input<R>) -> usize {
         let (width, height, map) = parse(input);
+        let mut image = Vec::with_capacity((width - 2) * (height - 2) * 3);
+        for y in 1..height - 1 {
+            for x in 1..width - 1 {
+                let depth = map[y * width + x];
+                if depth < 9 {
+                    image.push(0x10);
+                    image.push(0x10);
+                    image.push(0xff - depth * 10);
+                } else {
+                    image.push(0x80);
+                    image.push(0x80);
+                    image.push(0x80);
+                }
+            }
+        }
 
         let mut basin_sizes = (width + 1..((height - 1) * width - 1))
             .filter_map(|offset| is_basin_low(offset, width, &map).then(|| offset))

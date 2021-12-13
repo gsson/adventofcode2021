@@ -57,7 +57,6 @@ mod part2 {
     }
 
     fn generate_table(combinations: &[String]) -> Option<[u8; 128]> {
-        let mut table = [0xffu8; 128];
         let by_number_of_segments = combinations
             .iter()
             .map(|s| normalise(s.as_str()))
@@ -95,6 +94,7 @@ mod part2 {
             .iter() // Contains 2, 3 and 5
             .find(|n| **n != three && **n != five)?; // 2
 
+        let mut table = [0xffu8; 128];
         table[zero as usize] = 0;
         table[one as usize] = 1;
         table[two as usize] = 2;

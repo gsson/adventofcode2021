@@ -71,11 +71,8 @@ fn parse<R: std::io::BufRead>(input: Input<R>) -> (Vec<u32>, Vec<Board>) {
             .for_each(|(r, line)| board_row(&mut board, r, line));
         board
     }
-    let (numbers, boards) = input.delimited_once("\n\n");
-    let numbers = numbers
-        .comma_separated()
-        .parse::<u32>()
-        .collect::<Vec<_>>();
+    let (numbers, boards) = input.delimited_once(delimiters::SECTION);
+    let numbers = numbers.comma_separated().parse::<u32>().collect::<Vec<_>>();
 
     let boards = boards.sections().map(board).collect::<Vec<_>>();
 
