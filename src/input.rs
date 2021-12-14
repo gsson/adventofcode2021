@@ -42,6 +42,7 @@ impl<R: std::io::BufRead> Input<R> {
     pub fn new(input: R) -> Self {
         Self { input }
     }
+
     pub fn into_string(mut self) -> String {
         let mut s = String::new();
         self.input.read_to_string(&mut s).unwrap();
@@ -56,6 +57,12 @@ impl<R: std::io::BufRead> Input<R> {
 
     pub fn bytes(self) -> Bytes<R> {
         Bytes { input: self.input }
+    }
+
+    pub fn into_byte_array<const N: usize>(mut self) -> [u8; N] {
+        let mut bytes = [0u8; N];
+        self.input.read_exact(&mut bytes).unwrap();
+        bytes
     }
 }
 
@@ -144,7 +151,7 @@ fn read_until(input: &mut impl std::io::BufRead, delimiter: u8, buf: &mut Vec<u8
 
 fn read_delimited(input: &mut impl std::io::BufRead, delimiter: &[u8]) -> Option<Vec<u8>> {
     let last = *delimiter.last().unwrap();
-    let mut buf = Vec::new();
+    let mut buf = Vec::with_capacity(delimiter.len() + 1);
     if !read_until(input, last, &mut buf) {
         return None;
     }
