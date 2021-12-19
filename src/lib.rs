@@ -1,4 +1,5 @@
 mod input;
+pub mod vector;
 
 pub use input::*;
 use std::collections::HashMap;
